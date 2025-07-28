@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:5000/api/subscribers';
+const API_URL = 'https://api.au.shiosayi.org/api/subscribers';
 
 export interface Subscriber {
 	// PocketBase default fields

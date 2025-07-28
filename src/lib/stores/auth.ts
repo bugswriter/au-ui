@@ -3,7 +3,7 @@ import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 import type { User } from '$lib/api/users'; // Import the User type
 
-const API_BASE_URL = 'http://127.0.0.1:5000/api';
+const API_BASE_URL = 'https://api.au.shiosayi.org/api';
 
 // --- State Management ---
 
