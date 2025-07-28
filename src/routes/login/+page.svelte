@@ -22,7 +22,7 @@
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
   <div class="p-8 bg-white rounded-lg shadow-xl w-full max-w-sm">
     <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">
-      Admin Portal
+      e-rikshaw portal
     </h1>
     <form on:submit|preventDefault={handleLogin} class="space-y-4">
       <div>
@@ -65,7 +65,7 @@
         class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
         disabled={isLoading}
       >
-        {isLoading ? "Signing In..." : "Sign In"}
+        {isLoading ? "Signing In..." : "Login"}
       </button>
     </form>
   </div>

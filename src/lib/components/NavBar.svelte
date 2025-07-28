@@ -36,11 +36,15 @@
   <div class="mb-8 text-center">
     <a
       href="/"
-      class="font-script text-3xl font-extrabold text-white tracking-tight"
-      >Amar Ujala</a
+      class="font-script text-4xl font-extrabold tracking-tight text-white drop-shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out glow"
     >
+      <span
+        class="bg-gradient-to-r from-red-500 via-pink-500 to-yellow-400 bg-clip-text text-transparent"
+      >
+        amar ujala
+      </span>
+    </a>
   </div>
-
   <!-- Navigation Links -->
   <ul class="flex-grow space-y-2">
     {#each navItems as item}
