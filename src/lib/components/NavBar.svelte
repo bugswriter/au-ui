@@ -10,7 +10,7 @@
     { href: "/", label: "Dashboard" },
     { href: "/subscribers", label: "Subscribers" },
     { href: "/payments", label: "Payments" },
-    { href: "/users", label: "Manage Users" },
+    { href: "/users", label: "AU_POC" },
     { href: "/reports", label: "Reports" },
     { href: "/complaints", label: "Complaints" },
   ];

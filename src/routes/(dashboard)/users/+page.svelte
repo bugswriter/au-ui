@@ -49,7 +49,7 @@ async function handleDelete(event: CustomEvent<string>) {
 
 <div>
 	<div class="flex justify-between items-center mb-6">
-		<h1 class="text-3xl font-bold text-gray-900">Manage Users</h1>
+		<h1 class="text-3xl font-bold text-gray-900">AU POCs</h1>
 		<button on:click={handleAdd} class="btn-primary"> Add New User </button>
 	</div>
 
