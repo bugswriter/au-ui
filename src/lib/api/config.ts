@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://api.au.shiosayi.org';
+export const API_BASE_URL = 'https://api.au.shiosayi.org/api';
