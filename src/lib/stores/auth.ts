@@ -1,82 +1,101 @@
-import { writable } from 'svelte/store';
+import { writable, derived, type Readable } from 'svelte/store';
 import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
-import type { User } from '$lib/api/users'; // Import the User type
+import { API_BASE_URL } from '$lib/api/config';
 
-const API_BASE_URL = 'https://api.au.shiosayi.org/api';
+// Define the User type to match the data coming from your API
+export interface User {
+	id: string;
+	name: string;
+	email: string;
+	unit: string;
+    initial?: string; // We can add this on the client
+}
 
-// --- State Management ---
+// --- Helper function to get initial state from localStorage ---
+function getInitialUser(): User | null {
+	if (!browser) return null; // Can't access localStorage on server
 
-// Check localStorage to see if the user was already logged in from a previous session
-const getInitialUser = (): User | null => {
-    if (!browser) return null;
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-};
+	const storedUser = localStorage.getItem('user');
+	if (storedUser) {
+		return JSON.parse(storedUser);
+	}
+	return null;
+}
 
-// Create a store to hold the logged-in user's data
-export const authedUser = writable<User | null>(getInitialUser());
+// --- SVELTE STORES ---
 
-// The `isLoggedIn` store can now simply check if the user object exists
-export const isLoggedIn = writable<boolean>(getInitialUser() !== null);
+// The main store holding the logged-in user's data
+export const user = writable<User | null>(getInitialUser());
 
+// A derived store that is true if the user is logged in, false otherwise
+export const isLoggedIn: Readable<boolean> = derived(user, ($user) => $user !== null);
 
-// --- Authentication Functions ---
+// --- AUTHENTICATION FUNCTIONS ---
 
-export async function login(email, password) {
+/**
+ * Logs in the user by calling the real backend API.
+ * @param email The user's email
+ * @param password The user's password
+ */
+export async function login(email: string, password: string) {
 	try {
 		const response = await fetch(`${API_BASE_URL}/login`, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ email, password })
 		});
 
 		const data = await response.json();
 
 		if (!response.ok) {
-			// If the server returns an error (like 401), throw it to be caught
-			throw new Error(data.error || 'Login failed.');
+			// If the server returns an error (e.g., 401), throw it.
+			throw new Error(data.error || 'Login failed. Please check your credentials.');
 		}
 
-		// On successful login, the server sends back a token and user object
-		const { token, user } = data;
+		// On successful login, the server sends back a token and user object.
+		const { token, user: userData } = data;
+
+        // Add the 'initial' property for the UI avatar
+        userData.initial = userData.name.charAt(0).toUpperCase();
 
 		// Store user data and token for session persistence
 		if (browser) {
-			localStorage.setItem('user', JSON.stringify(user));
-			localStorage.setItem('authToken', token);
+			localStorage.setItem('user', JSON.stringify(userData));
+			localStorage.setItem('authToken', token); // Storing the token is crucial for future API calls
 		}
 
-		// Update our stores
-		authedUser.set(user);
-		isLoggedIn.set(true);
+		// Update the Svelte store to trigger UI changes
+		user.set(userData);
 
 		// Redirect to the dashboard
-		goto('/');
+		await goto('/');
 
 	} catch (error) {
-		// Clean up on failure
-		authedUser.set(null);
-		isLoggedIn.set(false);
-		console.error('Login error:', error);
+		// Clean up on failure to be safe
+		if (browser) {
+			localStorage.removeItem('user');
+			localStorage.removeItem('authToken');
+		}
+		user.set(null);
 		// Re-throw the error so the UI component can display it
 		throw error;
 	}
 }
 
+/**
+ * Logs the user out by clearing stores and localStorage.
+ */
 export function logout() {
-	// Clear stores
-	authedUser.set(null);
-	isLoggedIn.set(false);
+	// Clear the Svelte store
+	user.set(null);
 
-	// Clear localStorage
+	// Clear the browser's localStorage
 	if (browser) {
 		localStorage.removeItem('user');
 		localStorage.removeItem('authToken');
 	}
 
-	// Redirect to login page
+	// Redirect to the login page
 	goto('/login');
 }

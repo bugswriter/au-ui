@@ -1,150 +1,106 @@
-<!-- src/routes/(dashboard)/subscribers/+page.svelte -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { getSubscribers, type Subscriber, type PaginatedSubscribers } from '$lib/api/subscribers';
+	import { getUnitsLookup, type Lookups } from '$lib/api/dashboard';
+
+	import SubscriberFilter from '$lib/components/subscribers/SubscriberFilter.svelte';
 	import SubscriberList from '$lib/components/subscribers/SubscriberList.svelte';
 	import SubscriberForm from '$lib/components/subscribers/SubscriberForm.svelte';
-	import SubscriberFilter from '$lib/components/subscribers/SubscriberFilter.svelte';
 	import Pagination from '$lib/components/Pagination.svelte';
-	import {
-		getSubscribers,
-		createSubscriber,
-		updateSubscriber,
-		deleteSubscriber,
-		type Subscriber,
-		type PaginatedResult,
-		type SubscriberQuery
-	} from '$lib/api/subscribers';
 
-	let paginatedResult: PaginatedResult<Subscriber> | null = null;
-	let isLoading = true;
+	// Note: The import for 'Icon' has been removed from this file.
+
+	let subscribersData: PaginatedSubscribers | null = null;
+	let lookups: Lookups | null = null;
 	let error: string | null = null;
-	let showForm = false;
-	let currentSubscriber: Subscriber | null = null;
+	let isLoading = true;
+	let showFormModal = false;
+	let selectedSubscriber: Subscriber | null = null;
 
-	// This object holds all our query state
-	let query: SubscriberQuery = {
-		page: 1,
-		perPage: 10,
-		sort: '-created',
-		search: '',
-		plan: ''
-	};
-
-	// The main data loading function
-	async function loadSubscribers() {
+	async function loadData() {
 		isLoading = true;
 		error = null;
 		try {
-			paginatedResult = await getSubscribers(query);
+			const pageNum = Number($page.url.searchParams.get('page') ?? '1');
+			const search = $page.url.searchParams.get('search') ?? '';
+			const city = $page.url.searchParams.get('city') ?? '';
+			const has_due_payment = $page.url.searchParams.get('has_due_payment') === 'true';
+
+			const [subs, lkps] = await Promise.all([
+				getSubscribers({ page: pageNum, search, city, has_due_payment }),
+				getUnitsLookup()
+			]);
+			subscribersData = subs;
+			lookups = lkps;
 		} catch (e: any) {
 			error = e.message;
-			paginatedResult = null;
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	// Svelte's magic: this function re-runs whenever 'query' changes
-	$: if (query) {
-		loadSubscribers();
+	onMount(loadData);
+	$: $page.url, loadData();
+
+	function handleOpenModal(subscriber: Subscriber | null = null) {
+		selectedSubscriber = subscriber;
+		showFormModal = true;
 	}
 
-	function handleFilterChange(event: CustomEvent) {
-		// When filters change, reset to page 1
-		query = { ...query, ...event.detail, page: 1 };
+	function handleFormSuccess() {
+		showFormModal = false;
+		loadData();
 	}
 
 	function handlePageChange(event: CustomEvent<number>) {
-		query = { ...query, page: event.detail };
+		const query = new URLSearchParams($page.url.searchParams);
+		query.set('page', event.detail.toString());
+		goto(`/subscribers?${query.toString()}`);
 	}
-
-	function handleAddNew() {
-		currentSubscriber = null;
-		showForm = true;
-	}
-
-	function handleEdit(event: CustomEvent<Subscriber>) {
-		currentSubscriber = event.detail;
-		showForm = true;
-	}
-
-	async function handleDelete(event: CustomEvent<string>) {
-		const id = event.detail;
-		if (confirm('Are you sure you want to delete this subscriber?')) {
-			try {
-				await deleteSubscriber(id);
-				// If we delete the last item on a page, we might need to go back one page
-				if (paginatedResult && paginatedResult.items.length === 1 && paginatedResult.page > 1) {
-					query.page = paginatedResult.page - 1;
-				}
-				await loadSubscribers(); // Reload data with current query
-			} catch (e: any) {
-				alert(e.message);
-			}
-		}
-	}
-
-	async function handleSave(event: CustomEvent<Subscriber>) {
-		const subscriberData = event.detail;
-		try {
-			if (subscriberData.id) {
-				await updateSubscriber(subscriberData.id, subscriberData);
-			} else {
-				// After creating, reset to page 1 sorted by newest to see the new entry
-				query = { ...query, page: 1, sort: '-created' };
-				await createSubscriber(subscriberData);
-			}
-			showForm = false;
-			await loadSubscribers(); // Reload data
-		} catch (e: any) {
-			alert(e.message);
-		}
-	}
-
-	// Initial load
-	onMount(loadSubscribers);
 </script>
 
-<div class="space-y-6">
-	<div class="flex justify-between items-center">
-		<h1 class="text-3xl font-bold text-gray-800">Subscribers</h1>
-		{#if !showForm}
-			<button
-				on:click={handleAddNew}
-				class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow"
-			>
-				Add New Subscriber
-			</button>
-		{/if}
+<div>
+	<div class="flex justify-between items-center mb-6">
+		<h1 class="text-3xl font-bold text-gray-900">Subscribers</h1>
+		<!-- ======== THIS IS THE CORRECTED BUTTON ======== -->
+		<button
+			on:click={() => handleOpenModal()}
+			class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+		>
+			New Subscriber
+		</button>
 	</div>
 
-	{#if showForm}
-		<SubscriberForm
-			subscriber={currentSubscriber}
-			on:save={handleSave}
-			on:cancel={() => (showForm = false)}
-		/>
+	{#if lookups}
+		<SubscriberFilter {lookups} />
 	{/if}
 
-	<!-- We only show filters and list when the form is hidden -->
-	{#if !showForm}
-		<SubscriberFilter on:filter={handleFilterChange} />
-
+	<div class="mt-4">
 		{#if isLoading}
-			<p class="p-4 text-center text-gray-500">Loading subscribers...</p>
+			<div class="text-center p-8 text-gray-500">Loading subscribers...</div>
 		{:else if error}
-			<p class="p-4 text-center text-red-500 bg-red-100 rounded-md">{error}</p>
-		{:else if paginatedResult && paginatedResult.items.length > 0}
-			<SubscriberList subscribers={paginatedResult.items} on:edit={handleEdit} on:delete={handleDelete} />
-			<Pagination
-				currentPage={paginatedResult.page}
-				totalPages={paginatedResult.totalPages}
-				totalItems={paginatedResult.totalItems}
-				perPage={paginatedResult.perPage}
-				on:changePage={handlePageChange}
-			/>
-		{:else}
-			<p class="p-8 text-center text-gray-500">No subscribers found for the current filters.</p>
+			<div class="bg-red-100 text-red-700 p-4 rounded-md">{error}</div>
+		{:else if subscribersData?.items}
+			<SubscriberList subscribers={subscribersData.items} on:edit={(e) => handleOpenModal(e.detail)} />
+			{#if subscribersData.totalPages > 1}
+				<Pagination
+					currentPage={subscribersData.page}
+					totalPages={subscribersData.totalPages}
+					totalItems={subscribersData.totalItems}
+					perPage={subscribersData.perPage}
+					on:changePage={handlePageChange}
+				/>
+			{/if}
 		{/if}
-	{/if}
+	</div>
 </div>
+
+{#if showFormModal}
+	<SubscriberForm
+		subscriber={selectedSubscriber}
+		on:close={() => (showFormModal = false)}
+		on:success={handleFormSuccess}
+	/>
+{/if}

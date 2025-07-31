@@ -1,105 +1,86 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import type { Subscriber } from "$lib/api/subscribers";
+	import type { Subscriber } from '$lib/api/subscribers';
+	import { createEventDispatcher } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import PaymentHistory from './PaymentHistory.svelte';
 
-  export let subscribers: Subscriber[] = [];
-  let expandedRowId: string | null = null;
+	export let subscribers: Subscriber[] = [];
+	const dispatch = createEventDispatcher();
 
-  const dispatch = createEventDispatcher();
+	let expandedSubscriberId: string | null = null;
 
-  function toggleDetails(id: string) {
-    expandedRowId = expandedRowId === id ? null : id;
-  }
+	function toggleExpand(id: string) {
+		expandedSubscriberId = expandedSubscriberId === id ? null : id;
+	}
 </script>
 
-<div class="bg-white rounded-lg shadow-md overflow-x-auto">
-  <table class="w-full min-w-[700px] text-left">
-    <thead class="bg-gray-50 border-b border-gray-200">
-      <tr>
-        <th class="p-4 font-semibold text-sm text-gray-600">Name</th>
-        <th class="p-4 font-semibold text-sm text-gray-600">Email / Phone</th>
-        <th class="p-4 font-semibold text-sm text-gray-600">City</th>
-        <th class="p-4 font-semibold text-sm text-gray-600">Plan</th>
-        <th class="p-4 font-semibold text-sm text-gray-600 text-center"
-          >Actions</th
-        >
-      </tr>
-    </thead>
-    <tbody>
-      {#each subscribers as sub (sub.id)}
-        <tr class="border-t border-gray-200 hover:bg-gray-50">
-          <td class="p-4 font-medium text-gray-800">{sub.name}</td>
-          <td class="p-4 text-gray-600">
-            <div>{sub.email}</div>
-            <div class="text-xs text-gray-500">{sub.phone}</div>
-          </td>
-          <td class="p-4 text-gray-600">{sub.city || "N/A"}</td>
-          <td class="p-4 text-gray-600">{sub.plan || "N/A"}</td>
-          <td class="p-4 text-center space-x-2 whitespace-nowrap">
-            <button
-              on:click={() => toggleDetails(sub.id!)}
-              class="px-2 py-1 text-xs font-medium rounded {expandedRowId ===
-              sub.id
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-700'} hover:bg-blue-200"
-            >
-              {expandedRowId === sub.id ? "Hide" : "Details"}
-            </button>
-            <button
-              on:click={() => dispatch("edit", sub)}
-              class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-yellow-200"
-            >
-              Edit
-            </button>
-            <button
-              on:click={() => dispatch("delete", sub.id)}
-              class="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-red-200"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
+<div class="bg-white rounded-lg shadow-sm overflow-hidden">
+	<div class="overflow-x-auto">
+		<table class="w-full min-w-[800px]">
+			<thead class="bg-gray-50">
+				<tr>
+					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Subscriber</th>
+					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Contact</th>
+					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
+					<th class="w-24"></th><!-- Actions -->
+				</tr>
+			</thead>
+			<tbody class="divide-y divide-gray-200">
+				{#each subscribers as sub (sub.id)}
+					<tr
+						class="cursor-pointer transition-colors"
+						class:bg-indigo-50={expandedSubscriberId === sub.id}
+						class:hover:bg-gray-50={expandedSubscriberId !== sub.id}
+						on:click={() => toggleExpand(sub.id)}
+					>
+						<td class="p-4 font-medium text-gray-800">
+							<div class="flex items-center gap-3">
+								<div
+									class="text-gray-400 transition-transform {expandedSubscriberId === sub.id
+										? 'rotate-90'
+										: ''}"
+								>
+									▶
+								</div>
+								<div>
+									<div>{sub.name}</div>
+									<code class="text-xs text-gray-400 font-mono">{sub.id}</code>
+								</div>
+							</div>
+						</td>
+						<td class="p-4 text-sm text-gray-600">
+							<div>{sub.phone}</div>
+							<div class="text-xs text-gray-500">{sub.email}</div>
+						</td>
+						<td class="p-4 text-sm text-gray-600">
+							{sub.city}, {sub.pincode}
+							<div class="text-xs text-gray-500">{sub.unit}</div>
+						</td>
+						<td class="p-4 text-right">
+							<button
+								on:click|stopPropagation={() => dispatch('edit', sub)}
+								class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+							>
+								Edit
+							</button>
+						</td>
+					</tr>
 
-        <!-- EXPANDED ROW -->
-        {#if expandedRowId === sub.id}
-          <tr class="bg-gray-50">
-            <td colspan="5" class="p-4">
-              <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <h4 class="font-bold text-gray-700">Vendor Name</h4>
-                  <p class="text-gray-600">{sub.vendor_name || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 class="font-bold text-gray-700">State</h4>
-                  <p class="text-gray-600">{sub.state || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 class="font-bold text-gray-700">Pincode</h4>
-                  <p class="text-gray-600">{sub.pincode || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 class="font-bold text-gray-700">Branch</h4>
-                  <p class="text-gray-600">{sub.branch || "N/A"}</p>
-                </div>
-                <div>
-                  <h4 class="font-bold text-gray-700">Product</h4>
-                  <p class="text-gray-600">{sub.product || "N/A"}</p>
-                </div>
-                <div class="col-span-2 md:col-span-3">
-                  <h4 class="font-bold text-gray-700">Address</h4>
-                  <p class="text-gray-600">{sub.address || "N/A"}</p>
-                </div>
-              </div>
-            </td>
-          </tr>
-        {/if}
-      {:else}
-        <tr>
-          <td colspan="5" class="p-8 text-center text-gray-500"
-            >No subscribers found.</td
-          >
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+					{#if expandedSubscriberId === sub.id}
+						<tr>
+							<td colspan="4" class="p-0 bg-gray-50/70">
+								<div transition:slide={{ duration: 200 }} class="p-4 border-t-2 border-indigo-200">
+									<PaymentHistory subscriberId={sub.id} />
+								</div>
+							</td>
+						</tr>
+					{/if}
+				{:else}
+					<tr>
+						<td colspan="4" class="p-8 text-center text-gray-500">No subscribers found.</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 </div>

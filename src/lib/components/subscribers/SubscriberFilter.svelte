@@ -1,90 +1,138 @@
-<!-- src/lib/components/subscribers/SubscriberFilter.svelte -->
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
+	import type { Lookups } from '$lib/api/dashboard';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
-	// Hardcoded for simplicity, but could be fetched from the API
-	const plans = ['Basic', 'Standard', 'Premium'];
+	export let lookups: Lookups;
 
-	let searchTerm = '';
-	let selectedPlan = '';
-	let sortBy = '-created';
+	// State for all filters, initialized from URL
+	let search = $page.url.searchParams.get('search') ?? '';
+	let unit = $page.url.searchParams.get('unit') ?? '';
+	let city = $page.url.searchParams.get('city') ?? '';
+	let pincode = $page.url.searchParams.get('pincode') ?? '';
+	let has_due_payment = $page.url.searchParams.get('has_due_payment') === 'true';
 
-	const dispatch = createEventDispatcher();
-
-	let debounceTimer: number;
-	function debounceApplyFilters() {
-		clearTimeout(debounceTimer);
-		debounceTimer = window.setTimeout(() => {
-			applyFilters();
-		}, 350); // wait 350ms after user stops typing
-	}
+	// Client-side validation for pincode
+	$: isPincodeValid = /^\d{6}$/.test(pincode) || pincode === '';
 
 	function applyFilters() {
-		dispatch('filter', {
-			search: searchTerm,
-			plan: selectedPlan,
-			sort: sortBy
-		});
+		if (!isPincodeValid) {
+			alert('Please enter a valid 6-digit pincode.');
+			return;
+		}
+		const query = new URLSearchParams();
+		if (search) query.set('search', search);
+		if (unit) query.set('unit', unit);
+		if (city) query.set('city', city);
+		if (pincode) query.set('pincode', pincode);
+		if (has_due_payment) query.set('has_due_payment', 'true');
+		query.set('page', '1');
+
+		goto(`/subscribers?${query.toString()}`, { keepFocus: true, noScroll: true });
 	}
 
-	function clearFilters() {
-		searchTerm = '';
-		selectedPlan = '';
-		sortBy = '-created';
-		applyFilters();
+	function resetFilters() {
+		search = '';
+		unit = '';
+		city = '';
+		pincode = '';
+		has_due_payment = false;
+		goto('/subscribers', { keepFocus: true, noScroll: true });
 	}
 </script>
 
-<div class="p-4 bg-gray-50 rounded-lg shadow-inner mb-6">
-	<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-		<!-- Search Input -->
-		<div class="lg:col-span-2">
-			<label for="search" class="block text-sm font-medium text-gray-700">Search</label>
-			<input
-				id="search"
-				type="text"
-				placeholder="Search by name, email, city..."
-				bind:value={searchTerm}
-				on:input={debounceApplyFilters}
-				class="mt-1 w-full p-2 border rounded-md"
-			/>
+<div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm mb-6 border border-gray-200">
+	<form on:submit|preventDefault={applyFilters}>
+		<!-- Main Filter Grid -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+			<!-- Search Input -->
+			<div class="sm:col-span-2 lg:col-span-1">
+				<label for="search" class="label">Search</label>
+				<input type="text" id="search" bind:value={search} placeholder="Name, phone, email..." class="input" />
+			</div>
+
+			<!-- Unit Dropdown -->
+			<div>
+				<label for="unit" class="label">Unit</label>
+				<select id="unit" bind:value={unit} class="input">
+					<option value="">All Units</option>
+					{#if lookups?.units}
+						{#each lookups.units as u}
+							<option value={u}>{u}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
+			<!-- City Dropdown -->
+			<div>
+				<label for="city" class="label">City</label>
+				<select id="city" bind:value={city} class="input">
+					<option value="">All Cities</option>
+					{#if lookups?.cities}
+						{#each lookups.cities as c}
+							<option value={c}>{c}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
+			<!-- Pincode Input (Visually Smaller) -->
+			<div>
+				<label for="pincode" class="label">Pincode</label>
+				<input
+					type="text"
+					id="pincode"
+					bind:value={pincode}
+					placeholder="6-digit code"
+					class="input max-w-[180px]"
+					class:!ring-red-500={!isPincodeValid}
+					maxlength="6"
+				/>
+			</div>
 		</div>
 
-		<!-- Plan Filter -->
-		<div>
-			<label for="plan" class="block text-sm font-medium text-gray-700">Plan</label>
-			<select
-				id="plan"
-				bind:value={selectedPlan}
-				on:change={applyFilters}
-				class="mt-1 w-full p-2 border rounded-md bg-white"
-			>
-				<option value="">All Plans</option>
-				{#each plans as plan}
-					<option value={plan}>{plan}</option>
-				{/each}
-			</select>
-		</div>
+		<!-- Lower Section with Toggle and Buttons -->
+		<div class="flex flex-wrap justify-between items-center pt-5 mt-5 border-t border-gray-200">
+			<!-- "Has Due Payments" Toggle Switch -->
+			<label for="due-payments" class="flex items-center cursor-pointer">
+				<div class="relative">
+					<input type="checkbox" id="due-payments" class="sr-only" bind:checked={has_due_payment} />
+					<div
+						class="block w-10 h-6 rounded-full transition-colors"
+						class:bg-indigo-600={has_due_payment}
+						class:bg-gray-200={!has_due_payment}
+					></div>
+					<div
+						class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform"
+						class:translate-x-4={has_due_payment}
+					></div>
+				</div>
+				<div class="ml-3 text-sm font-medium text-gray-900">Show only with due payments</div>
+			</label>
 
-		<!-- Sort By -->
-		<div>
-			<label for="sort" class="block text-sm font-medium text-gray-700">Sort By</label>
-			<select
-				id="sort"
-				bind:value={sortBy}
-				on:change={applyFilters}
-				class="mt-1 w-full p-2 border rounded-md bg-white"
-			>
-				<option value="-created">Newest First</option>
-				<option value="created">Oldest First</option>
-				<option value="name">Name (A-Z)</option>
-				<option value="-name">Name (Z-A)</option>
-			</select>
+			<!-- Action Buttons -->
+			<div class="flex items-center gap-3 mt-4 sm:mt-0">
+				<button type="button" on:click={resetFilters} class="btn-secondary"> Reset All </button>
+				<button type="submit" class="btn-primary"> Apply Filters </button>
+			</div>
 		</div>
-	</div>
-	<div class="mt-4 flex justify-end">
-		<button on:click={clearFilters} class="text-sm text-indigo-600 hover:underline">
-			Clear Filters
-		</button>
-	</div>
+	</form>
 </div>
+
+<style>
+	@reference '../../../app.css';
+
+	.label {
+		@apply block text-sm font-medium leading-6 text-gray-900 mb-1;
+	}
+	.input {
+		@apply block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6;
+	}
+	.btn-primary {
+		@apply rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500;
+	}
+	.btn-secondary {
+		@apply rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50;
+	}
+</style>

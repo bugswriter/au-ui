@@ -1,75 +1,85 @@
 <script lang="ts">
-  // We no longer need to import 'page' here
-  import { logout } from "$lib/stores/auth";
+	import { logout, user } from '$lib/stores/auth';
 
-  export let isMobileNavOpen = false;
-  export let currentPath: string; // <-- 1. Accept the path as a prop
+	export let isMobileNavOpen = false;
+	export let currentPath: string;
 
-  const navItems = [
-    { href: "/", label: "Home" },
-    { href: "/users", label: "Users" },
-    { href: "/subscribers", label: "Subscribers" },
-    { href: "/payments", label: "Payments" },
-    { href: "/reports", label: "Reports" },
-    { href: "/complaints", label: "Complaints" },
-  ];
+	const navItems = [
+		{ href: '/', label: 'Dashboard' },
+		{ href: '/subscribers', label: 'Subscribers' },
+		{ href: '/payments', label: 'Payments' },
+		{ href: '/reports', label: 'Reports' },
+		{ href: '/complaints', label: 'Complaints' }
+	];
+
+	const adminNavItems = [{ href: '/users', label: 'Manage Users' }];
+
+	const isActive = (href: string) => {
+		if (href === '/') return currentPath === '/';
+		return currentPath.startsWith(href);
+	};
 </script>
 
 <!-- Backdrop for mobile nav -->
 {#if isMobileNavOpen}
-  <div
-    on:click={() => (isMobileNavOpen = false)}
-    on:keydown
-    class="fixed inset-0 bg-black/60 z-30 lg:hidden"
-    aria-hidden="true"
-  ></div>
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div
+		on:click={() => (isMobileNavOpen = false)}
+		class="fixed inset-0 bg-black/60 z-30 lg:hidden"
+		aria-hidden="true"
+	></div>
 {/if}
 
 <!-- Sidebar Navigation -->
 <aside
-  class="fixed top-0 left-0 h-full w-64 bg-gray-800 text-gray-200 p-4
+	class="fixed top-0 left-0 h-full w-64 bg-gray-900 text-gray-300
            flex flex-col z-40 transition-transform transform
-           {isMobileNavOpen
-    ? 'translate-x-0'
-    : '-translate-x-full'} lg:translate-x-0"
+           {isMobileNavOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0"
 >
-  <div class="mb-8 text-center">
-    <a
-      href="/"
-      class="font-script text-4xl font-extrabold tracking-tight text-white drop-shadow-lg hover:scale-105 transition-transform duration-300 ease-in-out glow"
-    >
-      <span
-        class="bg-gradient-to-r from-red-500 via-pink-500 to-yellow-400 bg-clip-text text-transparent"
-      >
-        amar ujala
-      </span>
-    </a>
-  </div>
-  <!-- Navigation Links -->
-  <ul class="flex-grow space-y-2">
-    {#each navItems as item}
-      <li>
-        <!-- 2. Use the 'currentPath' prop for comparison -->
-        <a
-          href={item.href}
-          class="flex items-center p-3 rounded-lg transition-colors hover:bg-gray-700"
-          class:bg-blue-600={currentPath === item.href}
-          class:text-white={currentPath === item.href}
-          class:hover:bg-blue-700={currentPath === item.href}
-        >
-          {item.label}
-        </a>
-      </li>
-    {/each}
-  </ul>
+	<!-- Logo / Header -->
+	<div class="h-16 flex items-center px-4">
+		<a href="/" class="text-xl font-bold text-white">ISP Panel</a>
+	</div>
 
-  <!-- Admin Section -->
-  <div class="mt-auto">
-    <div class="p-2 border-t border-gray-700 flex justify-between items-center">
-      <p class="font-semibold text-white">Admin</p>
-      <button on:click={logout} class="text-sm text-red-400 hover:underline">
-        Logout
-      </button>
-    </div>
-  </div>
+	<!-- Main Navigation Links -->
+	<nav class="flex-1 px-2 py-4 space-y-1">
+		{#each navItems as item}
+			<a href={item.href} class="nav-link" class:nav-link-active={isActive(item.href)}>
+				<span>{item.label}</span>
+			</a>
+		{/each}
+	</nav>
+
+	<!-- Admin Section / User Profile -->
+	<div class="px-2 py-4">
+		<div class="mb-4">
+			{#each adminNavItems as item}
+				<a href={item.href} class="nav-link" class:nav-link-active={isActive(item.href)}>
+					<span>{item.label}</span>
+				</a>
+			{/each}
+		</div>
+
+		<!-- User Profile & Logout -->
+		<div class="flex items-center justify-between p-3 bg-gray-800 rounded-md">
+			<div class="flex items-center gap-3">
+				<div class="w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold">
+					{$user?.initial ?? 'A'}
+				</div>
+				<div>
+					<p class="text-sm font-semibold text-white">{$user?.name ?? 'Admin'}</p>
+					<p class="text-xs text-gray-400">{$user?.email ?? ''}</p>
+				</div>
+			</div>
+			<button on:click={logout} class="text-sm text-indigo-300 hover:underline" aria-label="Logout">
+				Logout
+			</button>
+		</div>
+	</div>
 </aside>
+
+<style>
+	@reference '../../app.css';
+	.nav-link { @apply block px-3 py-2.5 rounded-md text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800 hover:text-white; }
+	.nav-link-active { @apply bg-gray-800 text-white; }
+</style>
