@@ -1,100 +1,81 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import UserList from "$lib/components/users/UserList.svelte";
-  import UserForm from "$lib/components/users/UserForm.svelte";
-  import {
-    getUsers,
-    createUser, // <-- 1. Import 'createUser' instead of 'registerUser'
-    updateUser,
-    deleteUser,
-    type User,
-  } from "$lib/api/users";
+	import { onMount } from 'svelte';
+	import { getUsers, deleteUser, type User } from '$lib/api/users';
+	import UserList from '$lib/components/users/UserList.svelte';
+	import UserForm from '$lib/components/users/UserForm.svelte';
 
-  let users: User[] = [];
-  let isLoading = true;
-  let error: string | null = null;
-  let showForm = false;
-  let currentUser: User | null = null;
+	let users: User[] = [];
+	let isLoading = true;
+	let error = '';
+	let showForm = false;
+	let selectedUser: User | null = null;
 
-  async function loadUsers() {
-    isLoading = true;
-    error = null;
-    try {
-      users = await getUsers();
-    } catch (e) {
-      error = e.message;
-    } finally {
-      isLoading = false;
-    }
-  }
+	async function loadUsers() {
+		isLoading = true;
+		error = '';
+		try {
+			users = await getUsers();
+		} catch (e: any) {
+			error = e.message;
+		} finally {
+			isLoading = false;
+		}
+	}
 
-  function handleAddNew() {
-    currentUser = null;
-    showForm = true;
-  }
+	onMount(loadUsers);
 
-  function handleEdit(event: CustomEvent<User>) {
-    currentUser = event.detail;
-    showForm = true;
-  }
+	function handleAdd() {
+		selectedUser = null;
+		showForm = true;
+	}
 
-  async function handleDelete(event: CustomEvent<string>) {
-    const id = event.detail;
-    if (confirm("Are you sure you want to delete this user?")) {
-      try {
-        await deleteUser(id);
-        await loadUsers();
-      } catch (e) {
-        alert(e.message);
-      }
-    }
-  }
+	function handleEdit(event: CustomEvent<User>) {
+		selectedUser = event.detail;
+		showForm = true;
+	}
 
-  async function handleSave(event: CustomEvent<Partial<User>>) {
-    const userData = event.detail;
-    try {
-      if (userData.id) {
-        await updateUser(userData.id, userData);
-      } else {
-        // <-- 2. Call the corrected 'createUser' function
-        await createUser(userData);
-      }
-      showForm = false;
-      await loadUsers();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
-
-  onMount(loadUsers);
+async function handleDelete(event: CustomEvent<string>) {
+		const userId = event.detail;
+		if (confirm('Are you sure you want to delete this user?')) {
+			try {
+				await deleteUser(userId);
+				await loadUsers(); // Refresh the list
+			} catch (e: any) {
+				alert(`Error: ${e.message}`);
+			}
+		}
+	}
 </script>
 
-<div class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h1 class="text-3xl font-bold text-gray-800">User Management</h1>
-    {#if !showForm}
-      <button
-        on:click={handleAddNew}
-        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow"
-      >
-        Add New User
-      </button>
-    {/if}
-  </div>
+<div>
+	<div class="flex justify-between items-center mb-6">
+		<h1 class="text-3xl font-bold text-gray-900">Manage Users</h1>
+		<button on:click={handleAdd} class="btn-primary"> Add New User </button>
+	</div>
 
-  {#if showForm}
-    <UserForm
-      user={currentUser}
-      on:save={handleSave}
-      on:cancel={() => (showForm = false)}
-    />
-  {/if}
-
-  {#if isLoading}
-    <p class="p-4 text-center text-gray-500">Loading users...</p>
-  {:else if error}
-    <p class="p-4 text-center text-red-500 bg-red-100 rounded-md">{error}</p>
-  {:else if !showForm}
-    <UserList {users} on:edit={handleEdit} on:delete={handleDelete} />
-  {/if}
+	{#if isLoading}
+		<p>Loading users...</p>
+	{:else if error}
+		<p class="text-red-600">{error}</p>
+	{:else}
+		<UserList {users} on:edit={handleEdit} on:delete={handleDelete} />
+	{/if}
 </div>
+
+{#if showForm}
+	<UserForm
+		user={selectedUser}
+		on:cancel={() => (showForm = false)}
+		on:success={() => {
+			showForm = false;
+			loadUsers();
+		}}
+	/>
+{/if}
+
+<style>
+	@reference '../../../app.css';
+	.btn-primary {
+		@apply rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500;
+	}
+</style>

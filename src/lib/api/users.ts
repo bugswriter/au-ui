@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://api.au.shiosayi.org/api';
+import { API_BASE_URL } from './config';
 
 export interface User {
 	id?: string;

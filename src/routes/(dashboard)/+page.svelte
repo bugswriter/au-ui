@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	// We are re-introducing the API call.
 	import { getDashboardStats, type DashboardStats } from '$lib/api/dashboard';
+
+	// The CountUp import is GONE.
 
 	let stats: DashboardStats | null = null;
 	let isLoading = true;
@@ -8,6 +11,7 @@
 
 	onMount(async () => {
 		try {
+			// Fetch the data from your (mocked) API endpoint.
 			stats = await getDashboardStats();
 		} catch (e: any) {
 			error = e.message;
@@ -16,24 +20,33 @@
 		}
 	});
 
-	// Helper to format numbers with commas for Indian currency format
-	const formatNumber = (num: number) => {
-		if (num === null || num === undefined) return '0';
-		return num.toLocaleString('en-IN');
-	};
+	/**
+	 * A robust helper function to format numbers for display.
+	 * This uses the built-in browser API and is guaranteed to work.
+	 */
+	function formatNumber(num: number, precision: number = 0): string {
+		if (num === null || num === undefined || isNaN(num)) {
+			return '0'; // Return a default value if data is invalid
+		}
+		// Uses the Indian numbering system (lakhs, crores) and sets decimal places.
+		return num.toLocaleString('en-IN', {
+			minimumFractionDigits: precision,
+			maximumFractionDigits: precision
+		});
+	}
 </script>
 
 <div>
-	<h1 class="text-3xl font-bold text-gray-900 mb-6">Dashboard</h1>
+	<div class="mb-8">
+		<h1 class="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+		<p class="text-gray-600 mt-1">A real-time summary of your operations.</p>
+	</div>
 
 	{#if isLoading}
+		<!-- Loading Skeleton with pulsing animation -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
-			<!-- Loading Skeleton -->
 			{#each { length: 4 } as _}
-				<div class="bg-white p-6 rounded-lg shadow-md h-28">
-                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div class="h-8 bg-gray-300 rounded w-1/2"></div>
-                </div>
+				<div class="bg-gray-200 h-32 rounded-lg"></div>
 			{/each}
 		</div>
 	{:else if error}
@@ -42,34 +55,53 @@
 			<p>{error}</p>
 		</div>
 	{:else if stats}
+		<!-- The main statistics grid with static, formatted numbers -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-			<!-- Total Subscribers -->
-			<div class="bg-white p-6 rounded-lg shadow-md">
-				<p class="text-sm font-medium text-gray-500">Total Subscribers</p>
-				<p class="text-4xl font-bold text-gray-800 mt-1">{formatNumber(stats.total_subscribers)}</p>
-			</div>
-
-			<!-- Total Due Amount -->
-			<div class="bg-white p-6 rounded-lg shadow-md">
-				<p class="text-sm font-medium text-gray-500">Total Due Amount</p>
-				<p class="text-4xl font-bold text-red-600 mt-1">
-					<span class="text-3xl">₹</span>{formatNumber(stats.total_due_amount)}
+			<!-- Total Subscribers Card -->
+			<div class="stat-card">
+				<p class="stat-title">Total Subscribers</p>
+				<p class="stat-value text-indigo-600">
+					{formatNumber(stats.total_subscribers)}
 				</p>
 			</div>
 
-			<!-- Revenue This Month -->
-			<div class="bg-white p-6 rounded-lg shadow-md">
-				<p class="text-sm font-medium text-gray-500">Revenue This Month</p>
-				<p class="text-4xl font-bold text-green-600 mt-1">
-					<span class="text-3xl">₹</span>{formatNumber(stats.revenue_this_month)}
+			<!-- Total Due Amount Card -->
+			<div class="stat-card">
+				<p class="stat-title">Total Due Amount</p>
+				<p class="stat-value text-orange-600">
+					<span class="text-2xl align-baseline">₹</span>{formatNumber(stats.total_due_amount, 2)}
 				</p>
 			</div>
 
-			<!-- New Subscribers -->
-			<div class="bg-white p-6 rounded-lg shadow-md">
-				<p class="text-sm font-medium text-gray-500">New Subscribers</p>
-				<p class="text-4xl font-bold text-blue-600 mt-1">+{formatNumber(stats.new_subscribers_this_month)}</p>
+			<!-- Revenue This Month Card -->
+			<div class="stat-card">
+				<p class="stat-title">Revenue This Month</p>
+				<p class="stat-value text-green-600">
+					<span class="text-2xl align-baseline">₹</span>{formatNumber(stats.revenue_this_month, 2)}
+				</p>
+			</div>
+
+			<!-- New Subscribers Card -->
+			<div class="stat-card">
+				<p class="stat-title">New Subscribers</p>
+				<p class="stat-value text-blue-600">
+					+{formatNumber(stats.new_subscribers_this_month)}
+				</p>
 			</div>
 		</div>
 	{/if}
 </div>
+
+<style>
+	@reference '../../app.css';
+
+	.stat-card {
+		@apply bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-all hover:shadow-md hover:-translate-y-1;
+	}
+	.stat-title {
+		@apply text-sm font-medium text-gray-500 tracking-wide;
+	}
+	.stat-value {
+		@apply text-4xl font-bold mt-2;
+	}
+</style>
