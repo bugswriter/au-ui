@@ -39,15 +39,19 @@
     ? 'translate-x-0'
     : '-translate-x-full'} lg:translate-x-0"
 >
-  <!-- Logo / Header -->
-  <div class="h-16 flex items-center px-6 shadow-md">
-    <a
-      href="/"
-      class="text-2xl text-center font-semibold text-white tracking-wide hover:text-indigo-200 transition-colors"
-    >
-      Amar Ujala
-    </a>
-  </div>
+
+<!-- Logo / Header -->
+<div class="h-16 flex items-center px-6 shadow-md bg-[#101828]">
+  <a href="/" class="flex items-center">
+    <img 
+      src="https://2.bp.blogspot.com/-91e2PSMrZjE/TvSUGtNlGDI/AAAAAAAAD6U/iA-rHM7NIx8/s400/amar-ujala-logo.gif" 
+      alt="Amar Ujala Logo" 
+      class="h-12 w-auto object-contain"
+    />
+  </a>
+</div>
+
+
 
   <!-- Main Navigation Links -->
   <nav class="flex-1 px-2 py-4 space-y-1">

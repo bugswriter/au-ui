@@ -22,7 +22,15 @@
 
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
 	<div class="p-8 bg-white rounded-lg shadow-xl w-full max-w-sm">
-		<h1 class="text-2xl font-bold mb-6 text-center text-gray-800">Amar Ujala Login</h1>
+		<h1 class="text-2xl font-bold mb-6 text-center text-gray-800">
+  <img 
+    src="https://2.bp.blogspot.com/-91e2PSMrZjE/TvSUGtNlGDI/AAAAAAAAD6U/iA-rHM7NIx8/s400/amar-ujala-logo.gif" 
+    alt="Amar Ujala" 
+    class="mx-auto h-12 w-auto object-contain"
+  />
+  <span class="sr-only">Amar Ujala Login</span>
+</h1>
+
 		<form on:submit|preventDefault={handleLogin} class="space-y-4">
 			<div>
 				<label for="email" class="block text-sm font-medium text-gray-700">Email</label>
