@@ -3,16 +3,18 @@
 	import type { Subscriber } from '$lib/api/subscribers';
 	import { createSubscriber, updateSubscriber } from '$lib/api/subscribers';
 
-	// NOTE: The import for 'Icon' has been removed.
-
 	export let subscriber: Subscriber | null = null;
 	const dispatch = createEventDispatcher();
 
+	// No changes needed here. `Partial<Subscriber>` is flexible enough
+	// to automatically include the new fields.
 	let formData: Partial<Subscriber> = subscriber ? { ...subscriber } : {};
 	let isLoading = false;
 	let errorMessage = '';
 	const isEditing = !!subscriber;
 
+	// No changes needed in the submit handler either. It sends the
+	// entire `formData` object, which will now contain the new fields.
 	async function handleSubmit() {
 		isLoading = true;
 		errorMessage = '';
@@ -55,6 +57,7 @@
 		<p class="text-sm text-gray-500 mb-6">Fill in the details below to manage a subscriber.</p>
 
 		<form on:submit|preventDefault={handleSubmit} class="space-y-4">
+			<!-- --- UPDATED: Grid now contains the new fields --- -->
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
 				<div>
 					<label for="name" class="label">Name</label>
@@ -70,7 +73,7 @@
 				</div>
 				<div>
 					<label for="unit" class="label">Unit</label>
-					<input type="text" id="unit" class="input" bind:value={formData.unit} placeholder="e.g. A-101"/>
+					<input type="text" id="unit" class="input" bind:value={formData.unit} placeholder="e.g. Delhi"/>
 				</div>
 				<div class="md:col-span-2">
 					<label for="address" class="label">Address</label>
@@ -78,11 +81,35 @@
 				</div>
 				<div>
 					<label for="city" class="label">City</label>
-					<input type="text" id="city" class="input" bind:value={formData.city} placeholder="e.g. Delhi"/>
+					<input type="text" id="city" class="input" bind:value={formData.city} placeholder="e.g. Gurgaon"/>
 				</div>
 				<div>
 					<label for="pincode" class="label">Pincode</label>
 					<input type="text" id="pincode" class="input" bind:value={formData.pincode} placeholder="e.g. 110092"/>
+				</div>
+
+				<!-- --- NEW: Center Name Input --- -->
+				<div>
+					<label for="center_name" class="label">Center Name</label>
+					<input
+						type="text"
+						id="center_name"
+						class="input"
+						bind:value={formData.center_name}
+						placeholder="e.g. Main Market Center"
+					/>
+				</div>
+				
+				<!-- --- NEW: Landmark Input --- -->
+				<div>
+					<label for="landmark" class="label">Landmark</label>
+					<input
+						type="text"
+						id="landmark"
+						class="input"
+						bind:value={formData.landmark}
+						placeholder="e.g. Near City Hall"
+					/>
 				</div>
 			</div>
 
@@ -90,7 +117,6 @@
 				<div class="bg-red-50 text-red-700 p-3 rounded-md text-sm border border-red-200">{errorMessage}</div>
 			{/if}
 
-			<!-- ======== CORRECTED ACTION BUTTONS ======== -->
 			<div class="pt-4 flex justify-end gap-3">
 				<button
 					type="button"
@@ -104,7 +130,6 @@
 					disabled={isLoading}
 					class="flex w-36 justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
 				>
-					<!-- Simple, clean text that changes based on different states -->
 					{isLoading ? 'Processing...' : isEditing ? 'Save Changes' : 'Submit'}
 				</button>
 			</div>

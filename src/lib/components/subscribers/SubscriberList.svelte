@@ -21,7 +21,10 @@
 				<tr>
 					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Subscriber</th>
 					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Contact</th>
-					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">Location</th>
+					<!-- --- UPDATED: Header is more descriptive --- -->
+					<th class="p-4 text-left text-xs font-semibold text-gray-500 uppercase">
+						Center / Location
+					</th>
 					<th class="w-24"></th><!-- Actions -->
 				</tr>
 			</thead>
@@ -50,11 +53,22 @@
 						</td>
 						<td class="p-4 text-sm text-gray-600">
 							<div>{sub.phone}</div>
-							<div class="text-xs text-gray-500">{sub.email}</div>
+							<div class="text-xs text-gray-500">{sub.email || '-'}</div>
 						</td>
+						<!-- --- UPDATED: Location column now displays the new fields --- -->
 						<td class="p-4 text-sm text-gray-600">
-							{sub.city}, {sub.pincode}
-							<div class="text-xs text-gray-500">{sub.unit}</div>
+							<!-- Display center_name as the primary location info -->
+							{#if sub.center_name}
+								<div>{sub.center_name}</div>
+							{/if}
+							<!-- Display landmark as secondary info -->
+							{#if sub.landmark}
+								<div class="text-xs text-gray-500">{sub.landmark}</div>
+							{/if}
+							<!-- Display city and unit as tertiary info, filtering out empty values -->
+							<div class="text-xs text-gray-500">
+								{[sub.city, sub.unit].filter(Boolean).join(' - ')}
+							</div>
 						</td>
 						<td class="p-4 text-right">
 							<button

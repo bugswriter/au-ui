@@ -1,3 +1,4 @@
+
 <script lang="ts">
 	import type { Lookups } from '$lib/api/dashboard';
 	import { goto } from '$app/navigation';
@@ -10,6 +11,10 @@
 	let unit = $page.url.searchParams.get('unit') ?? '';
 	let city = $page.url.searchParams.get('city') ?? '';
 	let pincode = $page.url.searchParams.get('pincode') ?? '';
+	// --- NEW ---
+	let center_name = $page.url.searchParams.get('center_name') ?? '';
+	let landmark = $page.url.searchParams.get('landmark') ?? '';
+	// --- END NEW ---
 	let has_due_payment = $page.url.searchParams.get('has_due_payment') === 'true';
 
 	// Client-side validation for pincode
@@ -25,6 +30,10 @@
 		if (unit) query.set('unit', unit);
 		if (city) query.set('city', city);
 		if (pincode) query.set('pincode', pincode);
+		// --- NEW ---
+		if (center_name) query.set('center_name', center_name);
+		if (landmark) query.set('landmark', landmark);
+		// --- END NEW ---
 		if (has_due_payment) query.set('has_due_payment', 'true');
 		query.set('page', '1');
 
@@ -36,6 +45,10 @@
 		unit = '';
 		city = '';
 		pincode = '';
+		// --- NEW ---
+		center_name = '';
+		landmark = '';
+		// --- END NEW ---
 		has_due_payment = false;
 		goto('/subscribers', { keepFocus: true, noScroll: true });
 	}
@@ -43,12 +56,19 @@
 
 <div class="bg-white p-4 sm:p-5 rounded-lg shadow-sm mb-6 border border-gray-200">
 	<form on:submit|preventDefault={applyFilters}>
-		<!-- Main Filter Grid -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
-			<!-- Search Input -->
-			<div class="sm:col-span-2 lg:col-span-1">
+		<!-- Main Filter Grid - UPDATED to handle 6 items -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-5">
+			<!-- Search Input - UPDATED to span 2 columns on larger screens -->
+			<div class="sm:col-span-2 lg:col-span-2">
 				<label for="search" class="label">Search</label>
-				<input type="text" id="search" bind:value={search} placeholder="Name, phone, email..." class="input" />
+				<!-- UPDATED placeholder text -->
+				<input
+					type="text"
+					id="search"
+					bind:value={search}
+					placeholder="Name, phone, center, landmark..."
+					class="input"
+				/>
 			</div>
 
 			<!-- Unit Dropdown -->
@@ -77,8 +97,34 @@
 				</select>
 			</div>
 
-			<!-- Pincode Input (Visually Smaller) -->
+			<!-- --- NEW: Center Name Dropdown --- -->
 			<div>
+				<label for="center_name" class="label">Center Name</label>
+				<select id="center_name" bind:value={center_name} class="input">
+					<option value="">All Centers</option>
+					{#if lookups?.center_names}
+						{#each lookups.center_names as c}
+							<option value={c}>{c}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
+			<!-- --- NEW: Landmark Dropdown --- -->
+			<div>
+				<label for="landmark" class="label">Landmark</label>
+				<select id="landmark" bind:value={landmark} class="input">
+					<option value="">All Landmarks</option>
+					{#if lookups?.landmarks}
+						{#each lookups.landmarks as l}
+							<option value={l}>{l}</option>
+						{/each}
+					{/if}
+				</select>
+			</div>
+
+			<!-- Pincode Input (Visually Smaller) - MOVED TO THE END for better layout flow -->
+			<!-- <div>
 				<label for="pincode" class="label">Pincode</label>
 				<input
 					type="text"
@@ -89,7 +135,7 @@
 					class:!ring-red-500={!isPincodeValid}
 					maxlength="6"
 				/>
-			</div>
+			</div> -->
 		</div>
 
 		<!-- Lower Section with Toggle and Buttons -->

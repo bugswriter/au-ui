@@ -1,7 +1,8 @@
 import { API_BASE_URL } from './config';
 import type { PaymentCycle } from './payment_cycles'; // Assuming this type exists
 
-// Define the types for our data for type safety
+// --- UPDATED ---
+// Define the Subscriber interface to include the new fields
 export interface Subscriber {
 	id: string;
 	name: string;
@@ -12,6 +13,8 @@ export interface Subscriber {
 	state: string;
 	pincode: string;
 	unit: string;
+	center_name: string; // <-- NEW
+	landmark: string;    // <-- NEW
 	created: string;
 	updated: string;
 }
@@ -25,37 +28,48 @@ export interface PaginatedSubscribers {
 }
 
 export async function getSubscribers(
+	// --- UPDATED ---
+	// Add the new optional parameters for filtering
 	params: {
 		page?: number;
 		search?: string;
 		city?: string;
 		unit?: string;
-		has_due_payment?: boolean;
 		pincode?: string;
+		center_name?: string; // <-- NEW
+		landmark?: string;    // <-- NEW
+		has_due_payment?: boolean;
 	} = {}
 ): Promise<PaginatedSubscribers> {
 	const query = new URLSearchParams();
+
+	// Set parameters if they exist
 	if (params.page) query.set('page', params.page.toString());
 	if (params.search) query.set('search', params.search);
 	if (params.city) query.set('city', params.city);
 	if (params.unit) query.set('unit', params.unit);
-	if (params.has_due_payment) query.set('has_due_payment', 'true');
 	if (params.pincode) query.set('pincode', params.pincode);
+	if (params.has_due_payment) query.set('has_due_payment', 'true');
+	
+	// --- NEW ---
+	// Add the new filter parameters to the query string
+	if (params.center_name) query.set('center_name', params.center_name);
+	if (params.landmark) query.set('landmark', params.landmark);
+	// --- END NEW ---
 
 	const response = await fetch(`${API_BASE_URL}/subscribers?${query.toString()}`);
 
-	// --- THIS IS THE MISSING CODE ---
-
-	// 1. Check if the request was successful
 	if (!response.ok) {
-		throw new Error('Failed to fetch subscribers');
+		// You can add more detailed error handling here if needed
+		const errorData = await response.json().catch(() => ({ message: 'Failed to fetch subscribers' }));
+		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
 	}
 
-	// 2. Parse the JSON body and RETURN the result.
-	// This fulfills the function's promise to return a PaginatedSubscribers object.
 	return response.json();
 }
 
+// No changes needed here. `Partial<Subscriber>` will automatically
+// include the new fields `center_name` and `landmark`.
 export async function createSubscriber(data: Partial<Subscriber>): Promise<Subscriber> {
 	const response = await fetch(`${API_BASE_URL}/subscribers`, {
 		method: 'POST',
@@ -63,11 +77,13 @@ export async function createSubscriber(data: Partial<Subscriber>): Promise<Subsc
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
-		throw new Error('Failed to create subscriber');
+		const errorData = await response.json().catch(() => ({ message: 'Failed to create subscriber' }));
+		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
 	}
 	return response.json();
 }
 
+// No changes needed here either for the same reason as createSubscriber.
 export async function updateSubscriber(id: string, data: Partial<Subscriber>): Promise<Subscriber> {
 	const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
 		method: 'PATCH',
@@ -75,11 +91,13 @@ export async function updateSubscriber(id: string, data: Partial<Subscriber>): P
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
-		throw new Error('Failed to update subscriber');
+		const errorData = await response.json().catch(() => ({ message: 'Failed to update subscriber' }));
+		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
 	}
 	return response.json();
 }
 
+// No changes needed in this function.
 export async function getSubscriberPaymentCycles(id: string): Promise<PaymentCycle[]> {
 	const response = await fetch(`${API_BASE_URL}/subscribers/${id}/payment-cycles`);
 	if (!response.ok) {
