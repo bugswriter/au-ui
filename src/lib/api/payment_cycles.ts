@@ -11,6 +11,7 @@ export interface PaymentCycle {
 	end_date: string;
 	amount: number;
 	is_due: boolean;
+	coupon_amount: number;
     is_flagged: boolean;
 	last_payment: string | null;
 	product_code: string;
@@ -63,7 +64,7 @@ export async function getPaymentCycles(
 	if (params.month) query.set('month', params.month);
 	if (params.subscriber) query.set('subscriber', params.subscriber);
 
-	const response = await fetch(`${API_BASE_URL}/payment-cycles?${query.toString()}`);
+	const response = await fetch(`${API_BASE_URL}/collections/payment_cycles/records?${query.toString()}`);
 	if (!response.ok) {
 		throw new Error('Failed to fetch payment cycles');
 	}
@@ -76,14 +77,14 @@ export async function getPaymentCycles(
  * @returns A promise that resolves to the newly created PaymentCycle object.
  */
 export async function createPaymentCycle(data: Partial<PaymentCycle>): Promise<PaymentCycle> {
-	const response = await fetch(`${API_BASE_URL}/payment-cycles`, {
+	const response = await fetch(`${API_BASE_URL}/collections/payment_cycles/records`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
 		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to create payment cycle');
+		throw new Error(errorData.message || 'Failed to create payment cycle');
 	}
 	return response.json();
 }
@@ -95,14 +96,14 @@ export async function createPaymentCycle(data: Partial<PaymentCycle>): Promise<P
  * @returns A promise that resolves to the updated PaymentCycle object.
  */
 export async function updatePaymentCycle(id: string, data: Partial<PaymentCycle>): Promise<PaymentCycle> {
-	const response = await fetch(`${API_BASE_URL}/payment-cycles/${id}`, {
+	const response = await fetch(`${API_BASE_URL}/collections/payment_cycles/records/${id}`, {
 		method: 'PATCH',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
 		const errorData = await response.json();
-		throw new Error(errorData.error || 'Failed to update payment cycle');
+		throw new Error(errorData.message || 'Failed to update payment cycle');
 	}
 	return response.json();
 }
@@ -113,18 +114,15 @@ export async function updatePaymentCycle(id: string, data: Partial<PaymentCycle>
  * @returns A promise that resolves when the operation is complete.
  */
 export async function deletePaymentCycle(id: string): Promise<void> {
-	const response = await fetch(`${API_BASE_URL}/payment-cycles/${id}`, {
+	const response = await fetch(`${API_BASE_URL}/collections/payment_cycles/records/${id}`, {
 		method: 'DELETE'
 	});
 	if (!response.ok) {
-		// Even if there's an error, the server might send a JSON body with details.
 		try {
 			const errorData = await response.json();
-			throw new Error(errorData.error || 'Failed to delete payment cycle');
+			throw new Error(errorData.message || 'Failed to delete payment cycle');
 		} catch (e) {
-			// If parsing fails, throw a generic error.
 			throw new Error('Failed to delete payment cycle');
 		}
 	}
-	// A successful DELETE request typically returns a 204 No Content status, so there's no JSON body to parse.
 }

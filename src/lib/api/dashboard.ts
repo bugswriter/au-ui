@@ -22,12 +22,52 @@ export interface Lookups {
  * (No changes needed in this function)
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-	const response = await fetch(`${API_BASE_URL}/dashboard/stats`);
-	if (!response.ok) {
-		const errorData = await response.json();
-		throw new Error(errorData.details || 'Failed to fetch dashboard stats');
+	try {
+		// Get current month dates
+		const now = new Date();
+		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+		const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+		// Fetch subscribers
+		const subscribersResponse = await fetch(`${API_BASE_URL}/collections/subscribers/records?perPage=1000`);
+		if (!subscribersResponse.ok) throw new Error('Failed to fetch subscribers');
+		const subscribersData = await subscribersResponse.json();
+		const subscribers = subscribersData.items || [];
+
+		// Fetch payment cycles
+		const paymentCyclesResponse = await fetch(`${API_BASE_URL}/collections/payment_cycles/records?perPage=1000`);
+		if (!paymentCyclesResponse.ok) throw new Error('Failed to fetch payment cycles');
+		const paymentCyclesData = await paymentCyclesResponse.json();
+		const paymentCycles = paymentCyclesData.items || [];
+
+		// Calculate statistics
+		const total_subscribers = subscribers.length;
+
+		// Total due amount (sum of amounts where is_due is true)
+		const total_due_amount = paymentCycles
+			.filter((cycle: any) => cycle.is_due)
+			.reduce((sum: number, cycle: any) => sum + (cycle.amount || 0), 0);
+
+		// Revenue this month (sum of amounts with last_payment in current month)
+		const revenue_this_month = paymentCycles
+			.filter((cycle: any) => cycle.last_payment && cycle.last_payment >= monthStart && cycle.last_payment <= monthEnd)
+			.reduce((sum: number, cycle: any) => sum + (cycle.amount || 0), 0);
+
+		// New subscribers this month (count created in current month)
+		const new_subscribers_this_month = subscribers
+			.filter((sub: any) => sub.created >= monthStart && sub.created <= monthEnd)
+			.length;
+
+		return {
+			total_subscribers,
+			total_due_amount,
+			revenue_this_month,
+			new_subscribers_this_month
+		};
+	} catch (error) {
+		console.error('Error fetching dashboard stats:', error);
+		throw error;
 	}
-	return response.json();
 }
 
 /**
@@ -39,10 +79,10 @@ export async function getLookups(): Promise<Lookups> {
 	try {
 		// Use Promise.all to fetch all lookups concurrently for better performance
 		const [unitsResponse, citiesResponse, centersResponse, landmarksResponse] = await Promise.all([
-			fetch(`${API_BASE_URL}/lookups/units`),
-			fetch(`${API_BASE_URL}/lookups/cities`),
-			fetch(`${API_BASE_URL}/lookups/center_names`),
-			fetch(`${API_BASE_URL}/lookups/landmarks`)
+		fetch(`${API_BASE_URL}/collections/units/records`),
+		fetch(`${API_BASE_URL}/collections/cities/records`),
+		fetch(`${API_BASE_URL}/collections/center_names/records`),
+		fetch(`${API_BASE_URL}/collections/landmarks/records`)
 		]);
 
 		// Check if any of the requests failed

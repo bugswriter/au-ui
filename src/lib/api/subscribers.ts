@@ -57,12 +57,12 @@ export async function getSubscribers(
 	if (params.landmark) query.set('landmark', params.landmark);
 	// --- END NEW ---
 
-	const response = await fetch(`${API_BASE_URL}/subscribers?${query.toString()}`);
+	const response = await fetch(`${API_BASE_URL}/collections/subscribers/records?${query.toString()}`);
 
 	if (!response.ok) {
 		// You can add more detailed error handling here if needed
 		const errorData = await response.json().catch(() => ({ message: 'Failed to fetch subscribers' }));
-		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
+		throw new Error(errorData.message || 'An unknown error occurred');
 	}
 
 	return response.json();
@@ -71,37 +71,61 @@ export async function getSubscribers(
 // No changes needed here. `Partial<Subscriber>` will automatically
 // include the new fields `center_name` and `landmark`.
 export async function createSubscriber(data: Partial<Subscriber>): Promise<Subscriber> {
-	const response = await fetch(`${API_BASE_URL}/subscribers`, {
+	const response = await fetch(`${API_BASE_URL}/collections/subscribers/records`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
 		const errorData = await response.json().catch(() => ({ message: 'Failed to create subscriber' }));
-		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
+		throw new Error(errorData.message || 'An unknown error occurred');
 	}
 	return response.json();
 }
 
 // No changes needed here either for the same reason as createSubscriber.
 export async function updateSubscriber(id: string, data: Partial<Subscriber>): Promise<Subscriber> {
-	const response = await fetch(`${API_BASE_URL}/subscribers/${id}`, {
+	const response = await fetch(`${API_BASE_URL}/collections/subscribers/records/${id}`, {
 		method: 'PATCH',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(data)
 	});
 	if (!response.ok) {
 		const errorData = await response.json().catch(() => ({ message: 'Failed to update subscriber' }));
-		throw new Error(errorData.details || errorData.message || 'An unknown error occurred');
+		throw new Error(errorData.message || 'An unknown error occurred');
+	}
+	return response.json();
+}
+
+export async function deleteSubscriber(id: string): Promise<void> {
+	const response = await fetch(`${API_BASE_URL}/collections/subscribers/records/${id}`, {
+		method: 'DELETE'
+	});
+	if (!response.ok) {
+		try {
+			const errorData = await response.json();
+			throw new Error(errorData.message || 'Failed to delete subscriber');
+		} catch (e) {
+			throw new Error('Failed to delete subscriber');
+		}
+	}
+}
+
+export async function getSubscriberById(id: string): Promise<Subscriber> {
+	const response = await fetch(`${API_BASE_URL}/collections/subscribers/records/${id}`);
+	if (!response.ok) {
+		const errorData = await response.json().catch(() => ({ message: 'Failed to fetch subscriber' }));
+		throw new Error(errorData.message || 'Failed to fetch subscriber');
 	}
 	return response.json();
 }
 
 // No changes needed in this function.
 export async function getSubscriberPaymentCycles(id: string): Promise<PaymentCycle[]> {
-	const response = await fetch(`${API_BASE_URL}/subscribers/${id}/payment-cycles`);
+	const response = await fetch(`${API_BASE_URL}/collections/payment_cycles/records?subscriber=${id}`);
 	if (!response.ok) {
 		throw new Error('Failed to fetch subscriber payment cycles');
 	}
-	return response.json();
+	const data = await response.json();
+	return data.items;
 }

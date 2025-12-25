@@ -40,24 +40,24 @@ export const isLoggedIn: Readable<boolean> = derived(user, ($user) => $user !== 
  */
 export async function login(email: string, password: string) {
 	try {
-		const response = await fetch(`${API_BASE_URL}/login`, {
+		const response = await fetch(`${API_BASE_URL}/collections/users/auth-with-password`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ email, password })
+			body: JSON.stringify({ identity:email, password })
 		});
 
 		const data = await response.json();
 
 		if (!response.ok) {
 			// If the server returns an error (e.g., 401), throw it.
-			throw new Error(data.error || 'Login failed. Please check your credentials.');
+			throw new Error(data.message || 'Login failed. Please check your credentials.');
 		}
 
-		// On successful login, the server sends back a token and user object.
-		const { token, user: userData } = data;
+		// On successful login, PocketBase returns a token and record object.
+		const { token, record: userData } = data;
 
         // Add the 'initial' property for the UI avatar
-        userData.initial = userData.name.charAt(0).toUpperCase();
+        userData.initial = userData.name?.charAt(0).toUpperCase() || 'U';
 
 		// Store user data and token for session persistence
 		if (browser) {

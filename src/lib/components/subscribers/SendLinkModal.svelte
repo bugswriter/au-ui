@@ -5,7 +5,7 @@
 	export let cycle: PaymentCycle;
 	const dispatch = createEventDispatcher();
 
-	let amount = cycle.amount;
+	let amount = cycle.amount-cycle.coupon_amount;
 	let isLoading = false;
 	let errorMessage = '';
 

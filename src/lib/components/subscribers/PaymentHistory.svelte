@@ -7,7 +7,6 @@
     type PaymentCycle,
   } from "$lib/api/payment_cycles";
   import CycleManagerModal from "./CycleManagerModal.svelte";
-  import SendLinkModal from "./SendLinkModal.svelte";
 
   export let subscriberId: string;
 
@@ -15,14 +14,14 @@
   let isLoading = true;
   let error: string | null = null;
   let showCycleModal = false;
-  let showLinkModal = false;
   let selectedCycle: PaymentCycle | null = null;
   let copiedId: string | null = null;
 
   async function loadHistory() {
     isLoading = true;
     try {
-      cycles = await getSubscriberPaymentCycles(subscriberId);
+      const all = await getSubscriberPaymentCycles(subscriberId);
+			cycles = all.filter((c) => !c.is_due);
     } catch (e: any) {
       error = e.message;
     } finally {
@@ -66,11 +65,16 @@
       return;
     }
     try {
+      // ask for optional coupon amount to apply to the new cycle
+      const couponInput = prompt('Enter coupon amount to apply to this new cycle (leave blank for none):');
+      const couponAmount = couponInput ? Number(couponInput) : 0;
+
       await createPaymentCycle({
         subscriber: subscriberId,
         start_date: newStartDate.toISOString(),
         end_date: newEndDate.toISOString(),
         amount: latestCycle.amount,
+        coupon_amount: couponAmount,
         product_code: latestCycle.product_code,
         is_due: true,
       });
@@ -93,10 +97,6 @@
   function handleEditCycle(cycle: PaymentCycle) {
     selectedCycle = cycle;
     showCycleModal = true;
-  }
-  function handleSendLink(cycle: PaymentCycle) {
-    selectedCycle = cycle;
-    showLinkModal = true;
   }
   async function handleDeleteCycle(id: string) {
     if (confirm("Are you sure? This cannot be undone.")) {
@@ -134,22 +134,15 @@
       <table class="w-full text-sm">
         <thead class="bg-gray-50">
           <tr>
-            <th class="th">Status</th>
             <th class="th">Billing Period</th>
             <th class="th text-center">Amount</th>
+            <th class="th text-center">Payment Left</th>
             <th class="th text-center w-1/3">Actions</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
           {#each cycles as cycle (cycle.id)}
             <tr class="group">
-              <td class="td">
-                {#if cycle.is_due}
-                  <span class="badge-due">Due</span>
-                {:else}
-                  <span class="badge-paid">Paid</span>
-                {/if}
-              </td>
               <td class="td">
                 <div class="font-medium text-gray-800">
                   {formatDate(cycle.start_date)}
@@ -158,19 +151,18 @@
                   to {formatDate(cycle.end_date)}
                 </div>
               </td>
-              <td class="td text-center font-mono text-gray-800"
-                >₹{cycle.amount}</td
-              >
+              <td class="td text-center font-mono text-gray-800"> 
+                <div>₹{cycle.amount}</div>
+                {#if cycle.coupon_amount}
+                  <div class="text-xs text-gray-500">Coupon: -₹{cycle.coupon_amount}</div>
+                {/if}
+              </td>
+              <td class="td text-center font-mono text-gray-800">
+                ₹{(Number(cycle.amount || 0) - Number(cycle.coupon_amount || 0)).toFixed(2)}
+              </td>
               <td class="td text-center">
                 <!-- ======== DIRECT ACTION BUTTONS ======== -->
                 <div class="flex justify-end items-center gap-2">
-                  <button
-                    on:click={() => handleSendLink(cycle)}
-                    disabled={!cycle.is_due}
-                    class="btn-action"
-                  >
-                    Payment Link
-                  </button>
                   <button
                     on:click={() => handleCopyInvoiceLink(cycle)}
                     class="btn-action"
@@ -202,7 +194,7 @@
         No payment history
       </h3>
       <p class="mt-1 text-sm text-gray-500">
-        Get started by adding a new payment cycle.
+        No completed payments found.
       </p>
     </div>
   {/if}
@@ -217,12 +209,6 @@
       showCycleModal = false;
       loadHistory();
     }}
-  />
-{/if}
-{#if showLinkModal && selectedCycle}
-  <SendLinkModal
-    cycle={selectedCycle}
-    on:close={() => (showLinkModal = false)}
   />
 {/if}
 

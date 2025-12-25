@@ -29,7 +29,9 @@
 				...formData,
 				start_date: formData.start_date ? new Date(formData.start_date).toISOString() : undefined,
 				end_date: formData.end_date ? new Date(formData.end_date).toISOString() : undefined,
-				last_payment: formData.last_payment ? new Date(formData.last_payment).toISOString() : null
+				last_payment: formData.last_payment ? new Date(formData.last_payment).toISOString() : null,
+				// coupon_amount is optional; ensure numeric value or 0
+				coupon_amount: formData.coupon_amount ? Number(formData.coupon_amount) : 0
 			};
 			if (isEditing && cycle) {
 				await updatePaymentCycle(cycle.id, payload);
@@ -63,6 +65,10 @@
 					<input type="number" id="amount" class="input" bind:value={formData.amount} required />
 				</div>
 				<div>
+					<label for="coupon_amount" class="label">Coupon Amount (₹)</label>
+					<input type="number" id="coupon_amount" class="input" bind:value={formData.coupon_amount} min="0" />
+				</div>
+				<div>
 					<label for="product_code" class="label">Product Code</label>
 					<input type="text" id="product_code" class="input" bind:value={formData.product_code} />
 				</div>
@@ -87,6 +93,12 @@
 						</div>
 					</div>
 				</div>
+			</div>
+
+			<!-- Preview final amount after coupon -->
+			<div>
+				<label class="label">Final Amount</label>
+				<div class="text-lg font-mono">₹{(Number(formData.amount || 0) - Number(formData.coupon_amount || 0)).toFixed(2)}</div>
 			</div>
 
 			{#if errorMessage}
